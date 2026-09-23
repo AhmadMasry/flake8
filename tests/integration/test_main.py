@@ -335,6 +335,26 @@ ignore = F401
     assert cli.main(["--isolated", "--config", str(config), str(py_file)]) == 1
 
 
+@pytest.mark.parametrize(
+    ("args", "setup_cfg"),
+    (
+        (["--builtins=_"], ""),
+        ([], "[flake8]\nbuiltins = _\n"),
+    ),
+)
+def test_builtins_option(tmpdir, capsys, args, setup_cfg):
+    """Ensure that custom builtins are not reported as undefined names."""
+    tmpdir.join("setup.cfg").write(setup_cfg)
+    tmpdir.join("t.py").write('print(_("x"))\nprint(y)\n')
+
+    with tmpdir.as_cwd():
+        assert cli.main([*args, "t.py"]) == 1
+
+    out, err = capsys.readouterr()
+    assert out == "t.py:2:7: F821 undefined name 'y'\n"
+    assert err == ""
+
+
 def test_file_not_found(tmpdir, capsys):
     """Ensure that a not-found file / directory is an error."""
     with tmpdir.as_cwd():

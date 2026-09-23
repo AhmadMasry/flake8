@@ -70,12 +70,16 @@ FLAKE8_PYFLAKES_CODES = {
 class FlakesChecker(pyflakes.checker.Checker):
     """Subclass the Pyflakes checker to conform with the flake8 API."""
 
+    builtins: frozenset[str] = frozenset()
     with_doctest = False
 
     def __init__(self, tree: ast.AST, filename: str) -> None:
         """Initialize the PyFlakes plugin with an AST tree and filename."""
         super().__init__(
-            tree, filename=filename, withDoctest=self.with_doctest,
+            tree,
+            filename=filename,
+            withDoctest=self.with_doctest,
+            builtins=self.builtins,
         )
 
     @classmethod
@@ -98,8 +102,7 @@ class FlakesChecker(pyflakes.checker.Checker):
     @classmethod
     def parse_options(cls, options: argparse.Namespace) -> None:
         """Parse option values from Flake8's OptionManager."""
-        if options.builtins:
-            cls.builtIns = cls.builtIns.union(options.builtins)
+        cls.builtins = frozenset(options.builtins or ())
         cls.with_doctest = options.doctests
 
     def run(self) -> Generator[tuple[int, int, str, type[Any]]]:
